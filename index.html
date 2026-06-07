@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RPS Royale | Ultimate Rock Paper Scissors Arena</title>
+    <!-- Google Fonts + Font Awesome + Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            background: radial-gradient(circle at 10% 20%, #0B1120, #030712);
+            color: #F1F5F9;
+            padding: 1.5rem;
+            transition: background 0.2s;
+        }
+        body.light-mode {
+            background: #f0f4f8;
+            color: #0f172a;
+        }
+        /* glassmorphism */
+        .glass {
+            background: rgba(15, 25, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        body.light-mode .glass {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #cbd5e1;
+            color: #0f172a;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #3B82F6, #8B5CF6);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { transform: scale(0.97); filter: brightness(1.05); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #3B82F6;
+            border-radius: 2rem;
+            padding: 0.5rem 1.2rem;
+            color: #B9D0FF;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        body.light-mode .btn-outline {
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+        .btn-outline:hover { background: #1E2A47; }
+        body.light-mode .btn-outline:hover { background: #dbeafe; }
+        .move-btn {
+            background: #1E293B;
+            border: 2px solid #3B82F6;
+            border-radius: 60px;
+            width: 100px;
+            padding: 12px 0;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.1s linear;
+            color: white;
+        }
+        body.light-mode .move-btn { background: #e2e8f0; color: #0f172a; }
+        .move-btn:hover { background: #3B82F6; transform: translateY(-3px); color: white; }
+        .badge-rank {
+            background: #1E2A3A;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        body.light-mode .badge-rank { background: #cbd5e1; color: #0f172a; }
+        .online-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #22C55E;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 4px #22C55E;
+        }
+        .game-result {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: #0F172A80;
+            border-radius: 60px;
+            padding: 6px 18px;
+            display: inline-block;
+        }
+        .score-chip {
+            background: #0F212E;
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            font-weight: 600;
+        }
+        body.light-mode .score-chip { background: #e2e8f0; }
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .timer-bar {
+            height: 6px;
+            background: #FACC15;
+            width: 100%;
+            border-radius: 4px;
+            transition: width 0.03s linear;
+        }
+        @media (max-width: 1000px) {
+            .dashboard-grid { grid-template-columns: 1fr !important; }
+            body { padding: 1rem; }
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.9fr;
+            gap: 1.5rem;
+        }
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000000cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .settings-panel {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: #0F172A;
+            border-radius: 2rem;
+            padding: 12px;
+            z-index: 99;
+            cursor: pointer;
+        }
+        body.light-mode .settings-panel { background: #f1f5f9; border: 1px solid #94a3b8; }
+    </style>
+</head>
+<body>
+
+<div style="max-width: 1400px; margin: 0 auto;">
+    <!-- HERO SECTION + GAME BANNER -->
+    <div class="glass" style="padding: 1.5rem 2rem; margin-bottom: 1.8rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="font-size: 2.2rem; background: linear-gradient(135deg,#FFFFFF,#60A5FA); -webkit-background-clip: text; background-clip: text; color: transparent;"><i class="fas fa-hand-fist"></i> RPS Royale</h1>
+            <p>Think fast. Pick wisely. Rock, Paper, or Scissors? Outsmart your opponent and climb to the top.</p>
+            <div style="display: flex; gap: 18px; margin-top: 12px;">
+                <div><i class="fas fa-trophy"></i> <strong id="statTotalMatches">0</strong> matches</div>
+                <div><i class="fas fa-users"></i> <strong id="statTotalPlayers">0</strong> players</div>
+                <div><i class="fas fa-chart-line"></i> <strong id="statTotalWins">0</strong> total wins</div>
+            </div>
+        </div>
+        <div>
+            <button id="quickPlayHeroBtn" class="btn-primary" style="font-size: 1.2rem;"><i class="fas fa-play"></i> Play Now</button>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- LEFT: GAMEPLAY -->
+        <div>
+            <!-- Game Modes -->
+            <div class="glass" style="padding: 1.2rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button id="modePvC" class="btn-outline active-mode">🤖 vs Computer</button>
+                        <button id="modePvP" class="btn-outline">👥 vs Friend</button>
+                        <button id="modeOnline" class="btn-outline">🌍 Online MP</button>
+                    </div>
+                    <div>
+                        <select id="rankedCasualSelect" class="btn-outline">
+                            <option value="casual">🎮 Casual</option>
+                            <option value="ranked">🏆 Ranked (ELO)</option>
+                        </select>
+                        <select id="bestOfSelect" class="btn-outline" style="margin-left: 6px;">
+                            <option value="1">Single</option><option value="3">Best of 3</option>
+                            <option value="5">Best of 5</option><option value="7">Best of 7</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <select id="advancedModeSelect" class="btn-outline">
+                        <option value="classic">✨ Classic RPS</option>
+                        <option value="lizardSpock">🦎 Lizard Spock</option>
+                        <option value="survival">🔥 Survival (vs AI)</option>
+                        <option value="speed">⏱️ Speed Round (3s)</option>
+                        <option value="randomEvent">🎲 Random Events</option>
+                    </select>
+                    <span id="eventDisplay" class="badge-rank"><i class="fas fa-dice"></i> No event</span>
+                </div>
+            </div>
+
+            <!-- Arena -->
+            <div class="glass" style="padding: 1.8rem; text-align: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div><i class="fas fa-user"></i> <strong id="playerName">YOU</strong> <span id="playerRankBadge" class="badge-rank">Bronze</span></div>
+                    <div style="font-weight: bold; font-size: 1.4rem;">VS</div>
+                    <div><span id="opponentName">Computer</span> <span id="opponentRankBadge" class="badge-rank">AI</span></div>
+                </div>
+                <div id="gameResult" class="game-result" style="margin: 20px 0;">⚔️ Your Turn!</div>
+                <div id="timerArea" style="display: none; margin: 8px 0;"><div id="timerFill" class="timer-bar"></div><span id="timerLabel">0.0s</span></div>
+                <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin: 20px 0;">
+                    <button class="move-btn" data-move="rock">✊ ROCK</button>
+                    <button class="move-btn" data-move="paper">📄 PAPER</button>
+                    <button class="move-btn" data-move="scissors">✂️ SCISSORS</button>
+                    <button id="lizardBtn" class="move-btn" data-move="lizard" style="display: none;">🦎 LIZARD</button>
+                    <button id="spockBtn" class="move-btn" data-move="spock" style="display: none;">🖖 SPOCK</button>
+                </div>
+                <div id="waitingMsg" class="badge-rank" style="background:#0F172A;">Choose your move</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px; gap: 8px; flex-wrap: wrap;">
+                    <div class="score-chip">🏆 Wins: <span id="userWins">0</span></div>
+                    <div class="score-chip">💀 Losses: <span id="userLosses">0</span></div>
+                    <div class="score-chip">🤝 Ties: <span id="userTies">0</span></div>
+                    <div class="score-chip">🔥 Streak: <span id="userStreak">0</span></div>
+                </div>
+                <div style="margin-top: 12px;"><i class="fas fa-history"></i> Round history: <span id="roundHistoryList">-</span></div>
+                <button id="findFirstMatchBtn" class="btn-primary" style="margin-top: 14px; width: 100%;">🔍 Find first match</button>
+            </div>
+        </div>
+
+        <!-- RIGHT: LOBBY, LEADERBOARD, STATS, CHALLENGES -->
+        <div>
+            <!-- LOBBY (exactly as image) -->
+            <div class="glass" style="padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-door-open"></i> LOBBY <span style="float:right;"><span class="online-dot"></span> 705 PLAYERS ONLINE</span></h3>
+                <div id="lobbyContainer">
+                    <div><span class="online-dot"></span> <strong>Wowl</strong> <span class="badge-rank">RANKED 1038</span> <button class="btn-outline" style="float:right; padding:2px 8px;">Play</button></div>
+                    <div><span class="online-dot"></span> <strong>Block-6209</strong> <span class="badge-rank">1020</span> <button class="btn-outline" style="float:right; padding:2px 8px;">Play</button></div>
+                    <div><strong>TOP 100</strong> aceshoshin (1910) • Akalak (1754) • Quoridor (1750)</div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Preview -->
+            <div class="glass" style="padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-chart-simple"></i> Leaderboard Preview</h3>
+                <div id="leaderboardPreview"></div>
+                <button id="fullLeaderboardBtn" class="btn-outline" style="width:100%; margin-top:8px;">View Full Rankings</button>
+            </div>
+
+            <!-- Statistics Dashboard -->
+            <div class="glass" style="padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-chart-line"></i> Statistics Dashboard</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0;">
+                    <div>Total games: <strong id="statGames">0</strong></div>
+                    <div>Win %: <strong id="statWinPct">0%</strong></div>
+                    <div>Longest streak: <strong id="statLongStreak">0</strong></div>
+                    <div>Favorite move: <strong id="favMove">-</strong></div>
+                    <div>Monthly wins: <strong id="monthlyWins">0</strong></div>
+                    <div>Current ELO: <strong id="currentElo">1000</strong></div>
+                </div>
+                <canvas id="moveChart" height="110"></canvas>
+            </div>
+
+            <!-- Daily Challenges -->
+            <div class="glass" style="padding: 1.2rem; margin-bottom: 1.5rem;">
+                <h3><i class="fas fa-tasks"></i> Daily Challenges</h3>
+                <div id="dailyChallenges"></div>
+                <div class="badge-rank" style="margin-top: 6px;">⭐ XP & Coin Rewards</div>
+            </div>
+
+            <!-- Tournament & Achievements -->
+            <div class="glass" style="padding: 1.2rem;">
+                <h3><i class="fas fa-trophy"></i> Tournament Hub</h3>
+                <button id="createTournamentBtn" class="btn-outline">Create Knockout Tournament</button>
+                <div id="tourneyStatus" style="margin-top: 6px;"></div>
+                <hr style="margin: 8px 0; opacity:0.3;">
+                <h3>🏅 Achievements</h3>
+                <div id="achievementsList">First Win • 10 Wins • 100 Wins • Streak Master</div>
+                <div style="margin-top: 12px;"><i class="fas fa-coins"></i> Coins: <span id="userCoins">0</span> 
+                <button id="shopThemeBtn" class="btn-outline" style="margin-left: 6px;">🎨 Buy Theme (100 coins)</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Updates & Premium Banner -->
+    <div class="glass" style="margin-top: 1.8rem; padding: 1rem; display: flex; justify-content: space-between; flex-wrap: wrap;">
+        <div><i class="fas fa-newspaper"></i> Latest Updates: Season 3 live! New Lizard-Spock mode, faster matchmaking.</div>
+        <div><i class="fas fa-gem"></i> Premium (Fan Plan $1/mo): exclusive badge, animations, advanced stats.</div>
+    </div>
+
+    <!-- Settings (Light/Dark, Sound) -->
+    <div class="settings-panel" id="settingsIcon">
+        <i class="fas fa-cog"></i>
+        <div id="settingsDropdown" style="display:none; background:#0F172A; border-radius:1rem; padding:0.8rem; margin-top:8px; position:absolute; bottom:40px; right:0;">
+            <button id="lightModeBtn">🌞 Light</button> <button id="darkModeBtn">🌙 Dark</button>
+            <div><i class="fas fa-volume-up"></i> <input type="range" id="soundSlider" min="0" max="100" value="70"> SFX</div>
+            <div><input type="checkbox" id="muteCheckbox"> Mute all</div>
+        </div>
+    </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="authModal" style="display:none;" class="modal">
+    <div class="glass" style="width: 340px; padding: 24px;">
+        <h3>Welcome back / Sign up</h3>
+        <input type="text" id="authUser" placeholder="Username" style="width:100%; margin:8px 0; padding:8px; border-radius:30px;"><input type="password" id="authPass" placeholder="Password">
+        <button id="loginBtnModal" class="btn-primary">Login</button> <button id="signupBtnModal" class="btn-outline">Sign Up</button>
+        <button id="closeAuthBtn" style="margin-top:12px;">Close</button>
+        <div><small>Email verification (mock)</small></div>
+    </div>
+</div>
+
+<script>
+    // ---------- PERSISTENT STORAGE & GLOBAL STATE ----------
+    let currentUser = null;
+    let users = JSON.parse(localStorage.getItem('rps_royale_users')) || [];
+    
+    function saveUsers() { localStorage.setItem('rps_royale_users', JSON.stringify(users)); }
+    function initDefaultUsers() {
+        if(users.length === 0) {
+            users = [
+                { id:1, username:"Wowl", password:"pass", elo:1038, wins:124, losses:98, draws:12, totalGames:234, streak:3, longestStreak:8, coins:450, rankTitle:"Gold", moveStats:{rock:85,paper:72,scissors:77}, achievements:["First Win","10 Wins"], monthlyWins:12, premium:false, dailyProgress:{win5:2, rock10:4, matches20:15} },
+                { id:2, username:"Block-6209", password:"pass", elo:1020, wins:88, losses:72, draws:8, totalGames:168, streak:2, longestStreak:5, coins:210, rankTitle:"Silver", moveStats:{rock:40,paper:35,scissors:45}, achievements:["First Win"], monthlyWins:7, premium:false, dailyProgress:{win5:1, rock10:2, matches20:8} },
+                { id:3, username:"aceshoshin", password:"pass", elo:1910, wins:512, losses:210, draws:48, totalGames:770, streak:9, longestStreak:18, coins:2400, rankTitle:"Grandmaster", moveStats:{rock:210,paper:188,scissors:114}, achievements:["First Win","10 Wins","100 Wins","10 Game Win Streak"], monthlyWins:53, premium:true, dailyProgress:{win5:5, rock10:10, matches20:20} },
+                { id:4, username:"Akalak", password:"pass", elo:1754, wins:378, losses:210, draws:40, totalGames:628, streak:5, longestStreak:12, coins:1100, rankTitle:"Master", moveStats:{rock:140,paper:130,scissors:108}, achievements:["First Win","10 Wins","100 Wins"], monthlyWins:28, premium:false, dailyProgress:{win5:3, rock10:7, matches20:18} },
+                { id:5, username:"Guest", password:"guest", elo:1000, wins:0, losses:0, draws:0, totalGames:0, streak:0, longestStreak:0, coins:20, rankTitle:"Bronze", moveStats:{rock:0,paper:0,scissors:0}, achievements:[], monthlyWins:0, premium:false, dailyProgress:{win5:0, rock10:0, matches20:0} }
+            ];
+            saveUsers();
+        }
+    }
+    initDefaultUsers();
+
+    function getRankByELO(elo) {
+        if(elo>=1800) return "Grandmaster"; if(elo>=1600) return "Master"; if(elo>=1400) return "Diamond";
+        if(elo>=1200) return "Platinum"; if(elo>=1000) return "Gold"; if(elo>=800) return "Silver"; return "Bronze";
+    }
+
+    let moveChart; let roundHistoryArr = [];
+    let currentGameMode = 'pvc'; // pvc, pvp, online
+    let rankedEnabled = false;
+    let bestOfNeeded = 1, seriesUserWins = 0, seriesOppWins = 0, seriesActive = false;
+    let advancedMode = 'classic';
+    let randomEventActive = null;
+    let speedTimerInterval = null, speedTimeLeft = 3;
+    let pvpPendingMove = null, pvpTurn = "P1";
+    let survivalStreakCount = 0;
+
+    function updateUIAndStats() {
+        if(!currentUser) return;
+        const u = currentUser;
+        document.getElementById('userWins').innerText = u.wins;
+        document.getElementById('userLosses').innerText = u.losses;
+        document.getElementById('userTies').innerText = u.draws;
+        document.getElementById('userStreak').innerText = u.streak;
+        document.getElementById('statGames').innerText = u.totalGames;
+        let winPct = u.totalGames ? ((u.wins/u.totalGames)*100).toFixed(1) : 0;
+        document.getElementById('statWinPct').innerText = winPct+"%";
+        document.getElementById('statLongStreak').innerText = u.longestStreak;
+        let fav = Object.entries(u.moveStats || {rock:0,paper:0,scissors:0}).sort((a,b)=>b[1]-a[1])[0]?.[0] || "Rock";
+        document.getElementById('favMove').innerText = fav.toUpperCase();
+        document.getElementById('userCoins').innerText = u.coins;
+        document.getElementById('playerRankBadge').innerHTML = getRankByELO(u.elo);
+        document.getElementById('currentElo').innerText = u.elo;
+        document.getElementById('playerName').innerHTML = u.username;
+        document.getElementById('monthlyWins').innerText = u.monthlyWins || 0;
+        // global stats
+        let totalMatches = users.reduce((a,b)=>a+b.totalGames,0);
+        let totalWins = users.reduce((a,b)=>a+b.wins,0);
+        document.getElementById('statTotalMatches').innerText = totalMatches;
+        document.getElementById('statTotalPlayers').innerText = users.length;
+        document.getElementById('statTotalWins').innerText = totalWins;
+        // chart
+        let chartData = [u.moveStats?.rock||0, u.moveStats?.paper||0, u.moveStats?.scissors||0];
+        if(advancedMode === 'lizardSpock') chartData = [u.moveStats?.rock||0, u.moveStats?.paper||0, u.moveStats?.scissors||0, u.moveStats?.lizard||0, u.moveStats?.spock||0];
+        moveChart.data.datasets[0].data = chartData;
+        moveChart.update();
+        updateLeaderboard();
+        updateDailyChallengesUI();
+        updateAchievementsUI();
+    }
+
+    function updateLeaderboard() {
+        let sorted = [...users].sort((a,b)=>b.elo - a.elo).slice(0,5);
+        let html = ""; sorted.forEach(p=>{ html+=`<div class="leaderboard-item"><span><i class="fas fa-crown"></i> ${p.username}</span><span>${p.elo} ${getRankByELO(p.elo)}</span></div>`;});
+        document.getElementById('leaderboardPreview').innerHTML = html;
+    }
+    function updateDailyChallengesUI() {
+        let prog = currentUser.dailyProgress || {win5:0, rock10:0, matches20:0};
+        document.getElementById('dailyChallenges').innerHTML = `
+            <div>🏆 Win 5 games: ${prog.win5}/5 ${prog.win5>=5 ? "✅ +50 coins" : ""}</div>
+            <div>🪨 Use Rock 10 times: ${prog.rock10}/10 ${prog.rock10>=10 ? "✅ +30 coins" : ""}</div>
+            <div>🎮 Complete 20 matches: ${prog.matches20}/20 ${prog.matches20>=20 ? "✅ +100 coins" : ""}</div>
+        `;
+        // auto reward check (simplified)
+        if(prog.win5>=5 && !currentUser.dailyClaimedWin5) { currentUser.coins+=50; currentUser.dailyClaimedWin5=true; saveUsers(); updateUIAndStats(); alert("Daily challenge completed! +50 coins"); }
+        if(prog.rock10>=10 && !currentUser.dailyClaimedRock10) { currentUser.coins+=30; currentUser.dailyClaimedRock10=true; saveUsers(); updateUIAndStats(); alert("Rock challenge completed! +30 coins"); }
+        if(prog.matches20>=20 && !currentUser.dailyClaimedMatches20) { currentUser.coins+=100; currentUser.dailyClaimedMatches20=true; saveUsers(); updateUIAndStats(); alert("Match count completed! +100 coins"); }
+    }
+    function updateAchievementsUI() {
+        let ach = currentUser.achievements || [];
+        if(currentUser.wins>=1 && !ach.includes("First Win")) ach.push("First Win");
+        if(currentUser.wins>=10 && !ach.includes("10 Wins")) ach.push("10 Wins");
+        if(currentUser.wins>=100 && !ach.includes("100 Wins")) ach.push("100 Wins");
+        if(currentUser.longestStreak>=5 && !ach.includes("5 Game Win Streak")) ach.push("5 Game Win Streak");
+        if(currentUser.longestStreak>=10 && !ach.includes("10 Game Win Streak")) ach.push("10 Game Win Streak");
+        if(currentUser.wins>=1 && !ach.includes("First blood")) ach.push("First blood");
+        currentUser.achievements = ach;
+        document.getElementById('achievementsList').innerHTML = ach.slice(0,5).join(" • ");
+    }
+    function addToHistory(text) { roundHistoryArr.unshift(text); if(roundHistoryArr.length>5) roundHistoryArr.pop(); document.getElementById('roundHistoryList').innerHTML = roundHistoryArr.join(" | "); }
+    function getAIMove() { if(advancedMode === 'lizardSpock') { let opts=['rock','paper','scissors','lizard','spock']; return opts[Math.floor(Math.random()*5)];} return ['rock','paper','scissors'][Math.floor(Math.random()*3)]; }
+    function determineWinner(player, opponent, mode) {
+        const rules = { rock: {scissors:1, lizard:1}, paper: {rock:1, spock:1}, scissors:{paper:1, lizard:1}, lizard:{spock:1, paper:1}, spock:{rock:1, scissors:1} };
+        if(player===opponent) return 'tie';
+        if((rules[player] && rules[player][opponent]) || (mode!=='lizardSpock' && ((player==='rock' && opponent==='scissors') || (player==='scissors' && opponent==='paper') || (player==='paper' && opponent==='rock')))) return 'win';
+        return 'loss';
+    }
+    async function handleMove(move) {
+        if(!currentUser) { alert("Please login/signup first!"); return; }
+        if(currentGameMode === 'pvp' && pvpTurn !== (currentUser.username === "P1"? "P1":"P2")) { alert("Wait for your friend's turn"); return; }
+        if(advancedMode === 'speed') { if(speedTimeLeft <= 0) { processGameResult('loss', null, null); return; } if(speedTimerInterval) clearInterval(speedTimerInterval); document.getElementById('timerArea').style.display='none'; }
+        let opponentMove = null, opponentUser = null;
+        if(currentGameMode === 'pvc') opponentMove = getAIMove();
+        else if(currentGameMode === 'pvp') {
+            if(pvpPendingMove) { opponentMove = pvpPendingMove; pvpPendingMove = null; pvpTurn = (pvpTurn === "P1"? "P2":"P1"); }
+            else { pvpPendingMove = move; document.getElementById('waitingMsg').innerText = "Waiting for friend's move..."; pvpTurn = (pvpTurn === "P1"? "P2":"P1"); return; }
+        }
+        else if(currentGameMode === 'online') {
+            let randomOpp = users.find(u => u.id !== currentUser.id) || users[0];
+            opponentUser = randomOpp; opponentMove = getAIMove();
+        }
+        let result = determineWinner(move, opponentMove, advancedMode);
+        processGameResult(result, opponentMove, opponentUser);
+    }
+
+    function processGameResult(result, oppMove, opponentUser) {
+        let u = currentUser;
+        if(result === 'win') {
+            u.wins++; u.streak = u.streak > 0 ? u.streak+1 : 1; if(u.streak > u.longestStreak) u.longestStreak = u.streak;
+            if(rankedEnabled) { let change = opponentUser ? Math.floor((opponentUser.elo - u.elo)/20 + 16) : 18; u.elo += change; if(u.elo<0) u.elo=0; }
+            u.coins += 12; if(!u.monthlyWins) u.monthlyWins=0; u.monthlyWins++;
+        } else if(result === 'loss') {
+            u.losses++; u.streak = u.streak < 0 ? u.streak-1 : -1;
+            if(rankedEnabled) { let change = opponentUser ? Math.floor((opponentUser.elo - u.elo)/20 - 16) : -15; u.elo += change; if(u.elo<0) u.elo=0; }
+            u.coins += 5;
+        } else { u.draws++; u.coins += 3; }
+        u.totalGames++;
+        if(!u.moveStats) u.moveStats = {rock:0,paper:0,scissors:0,lizard:0,spock:0};
+        let lastMove = window.lastSelectedMove; u.moveStats[lastMove] = (u.moveStats[lastMove] || 0) + 1;
+        if(advancedMode === 'survival' && result === 'loss') { alert(`Survival ended! Streak: ${survivalStreakCount}`); survivalStreakCount=0; advancedMode='classic'; document.getElementById('advancedModeSelect').value='classic'; showLizardSpockButtons(false); }
+        if(advancedMode === 'survival' && result === 'win') survivalStreakCount++;
+        // daily progress
+        if(!u.dailyProgress) u.dailyProgress = {win5:0, rock10:0, matches20:0};
+        u.dailyProgress.matches20 = Math.min(20, (u.dailyProgress.matches20||0)+1);
+        if(result === 'win') u.dailyProgress.win5 = Math.min(5, (u.dailyProgress.win5||0)+1);
+        if(lastMove === 'rock') u.dailyProgress.rock10 = Math.min(10, (u.dailyProgress.rock10||0)+1);
+        let msg = result==='win'? `🎉 WIN! ${lastMove} beats ${oppMove}` : (result==='loss'? `❌ LOSS! ${oppMove} beats ${lastMove}` : `🤝 TIE! Both ${lastMove}`);
+        document.getElementById('gameResult').innerHTML = msg;
+        addToHistory(msg);
+        updateUIAndStats();
+        if(seriesActive) {
+            if(result==='win') seriesUserWins++; else if(result==='loss') seriesOppWins++;
+            if(seriesUserWins >= bestOfNeeded) { alert("🏆 You won the series!"); resetSeries(); }
+            else if(seriesOppWins >= bestOfNeeded) { alert("You lost the series!"); resetSeries(); }
+        }
+        if(advancedMode === 'randomEvent' && !randomEventActive) triggerRandomEvent();
+        saveUsers();
+        if(currentGameMode === 'online') document.getElementById('waitingMsg').innerHTML = "Match finished. Click Find Match again.";
+        else document.getElementById('waitingMsg').innerHTML = "Choose your move";
+    }
+    function resetSeries() { seriesActive=false; seriesUserWins=0; seriesOppWins=0; }
+    function triggerRandomEvent() {
+        let events = ["🔥 Double Coins!", "🔄 Mirror Move (same move)", "💀 Sudden Death: loss = instant series loss"];
+        let ev = events[Math.floor(Math.random()*3)];
+        document.getElementById('eventDisplay').innerHTML = `<i class="fas fa-dice"></i> ${ev}`;
+        randomEventActive = ev;
+        setTimeout(()=>{ randomEventActive=null; document.getElementById('eventDisplay').innerHTML = "<i class='fas fa-dice'></i> No event"; }, 10000);
+    }
+    function showLizardSpockButtons(show) { document.getElementById('lizardBtn').style.display = show?'inline-block':'none'; document.getElementById('spockBtn').style.display = show?'inline-block':'none'; }
+
+    // Event Listeners
+    document.querySelectorAll('.move-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => { window.lastSelectedMove = btn.dataset.move; handleMove(btn.dataset.move); });
+    });
+    document.getElementById('modePvC').onclick = () => { currentGameMode='pvc'; document.getElementById('opponentName').innerHTML="Computer"; document.getElementById('waitingMsg').innerHTML="VS Computer - make your move"; };
+    document.getElementById('modePvP').onclick = () => { currentGameMode='pvp'; pvpPendingMove=null; pvpTurn="P1"; document.getElementById('opponentName').innerHTML="Friend (local)"; document.getElementById('waitingMsg').innerHTML="Local PvP: P1 goes first"; };
+    document.getElementById('modeOnline').onclick = () => { currentGameMode='online'; document.getElementById('opponentName').innerHTML="Online Player"; document.getElementById('waitingMsg').innerHTML="Click Find First Match to queue"; };
+    document.getElementById('rankedCasualSelect').onchange = (e) => { rankedEnabled = e.target.value === 'ranked'; };
+    document.getElementById('bestOfSelect').onchange = (e) => { let val = parseInt(e.target.value); bestOfNeeded = Math.ceil(val/2); seriesActive=true; seriesUserWins=0; seriesOppWins=0; };
+    document.getElementById('advancedModeSelect').onchange = (e) => { advancedMode = e.target.value; showLizardSpockButtons(advancedMode === 'lizardSpock'); if(advancedMode === 'speed') document.getElementById('timerArea').style.display='block'; else document.getElementById('timerArea').style.display='none'; if(advancedMode === 'survival') alert("Survival: keep winning vs AI!"); };
+    document.getElementById('findFirstMatchBtn').onclick = () => { if(currentGameMode === 'online') document.getElementById('waitingMsg').innerHTML = "Searching opponent... click move to play!"; else alert("Pick a move to start!"); };
+    document.getElementById('quickPlayHeroBtn').onclick = () => { if(currentUser) alert("Quick Match vs Computer!"); else alert("Login first"); };
+    document.getElementById('createTournamentBtn').onclick = () => { alert("8-player bracket created! (Simulated) You are in RO16."); document.getElementById('tourneyStatus').innerHTML = "🏆 Tournament active: Knockout round progress!"; };
+    document.getElementById('fullLeaderboardBtn').onclick = () => { let sorted = [...users].sort((a,b)=>b.elo-a.elo).map(u=>`${u.username} (${u.elo} ${getRankByELO(u.elo)})`).join("\n"); alert("🏅 FULL LEADERBOARD\n"+sorted); };
+    document.getElementById('shopThemeBtn').onclick = () => { if(currentUser && currentUser.coins>=100) { currentUser.coins-=100; alert("New profile theme unlocked!"); updateUIAndStats(); saveUsers();} else alert("Need 100 coins"); };
+    // Auth Modal
+    let modal = document.getElementById('authModal');
+    let topBar = document.querySelector('.glass[style*="justify-content: space-between;"]');
+    let authButton = document.createElement('button'); authButton.innerText = "Sign Up / Login"; authButton.className = "btn-primary"; authButton.id = "authHeaderBtn";
+    authButton.onclick = () => modal.style.display='flex';
+    topBar?.appendChild(authButton);
+    document.getElementById('closeAuthBtn').onclick = () => modal.style.display='none';
+    document.getElementById('loginBtnModal').onclick = () => { let un = document.getElementById('authUser').value; let pw = document.getElementById('authPass').value; let u = users.find(u=>u.username===un && u.password===pw); if(u){ currentUser = {...u}; modal.style.display='none'; updateUIAndStats(); document.getElementById('authHeaderBtn').style.display='none'; alert(`Welcome ${un}`); } else alert("Invalid"); };
+    document.getElementById('signupBtnModal').onclick = () => { let un = document.getElementById('authUser').value; if(users.find(u=>u.username===un)) alert("Exists"); else { let newUser = { id:Date.now(), username:un, password:document.getElementById('authPass').value, elo:1000, wins:0, losses:0, draws:0, totalGames:0, streak:0, longestStreak:0, coins:50, rankTitle:"Bronze", moveStats:{rock:0,paper:0,scissors:0}, achievements:[], monthlyWins:0, dailyProgress:{win5:0,rock10:0,matches20:0}, dailyClaimedWin5:false, dailyClaimedRock10:false, dailyClaimedMatches20:false }; users.push(newUser); saveUsers(); alert("Signup success! Please login.");}};
+    // chart init
+    let ctx = document.getElementById('moveChart').getContext('2d');
+    moveChart = new Chart(ctx, { type: 'bar', data: { labels: ['Rock','Paper','Scissors'], datasets: [{ label: 'Usage', data: [0,0,0], backgroundColor: '#3B82F6' }] } });
+    // load guest as default
+    let guestUser = users.find(u=>u.username==="Guest");
+    if(guestUser) { currentUser = {...guestUser}; updateUIAndStats(); document.getElementById('authHeaderBtn').style.display='none'; }
+    else currentUser = users[0];
+    updateUIAndStats();
+    // Settings UI
+    document.getElementById('settingsIcon').onclick = (e) => { e.stopPropagation(); let d=document.getElementById('settingsDropdown'); d.style.display = d.style.display==='none'?'block':'none'; };
+    document.getElementById('darkModeBtn').onclick = ()=> document.body.classList.remove('light-mode');
+    document.getElementById('lightModeBtn').onclick = ()=> document.body.classList.add('light-mode');
+    document.getElementById('muteCheckbox').onchange = (e) => { if(e.target.checked) console.log("sound muted"); };
+</script>
+</body>
+</html>
